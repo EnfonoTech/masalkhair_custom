@@ -1,0 +1,40 @@
+[
+    {
+        "doctype": "Custom Field",
+        "name": "Item-tax_exclusive",
+        "dt": "Item",
+        "fieldname": "tax_exclusive",
+        "fieldtype": "Check",
+        "label": "Tax Exclusive",
+        "insert_after": "is_sales_item",
+        "print_hide": 1,
+        "default": "0"
+    },
+    {
+        "doctype": "Custom Field",
+        "name": "Sales Invoice Item-tax_exclusive",
+        "dt": "Sales Invoice Item",
+        "fieldname": "tax_exclusive",
+        "fieldtype": "Check",
+        "label": "Tax Exclusive",
+        "insert_after": "rate",
+        "in_list_view": 0,
+        "hidden": 1,
+        "print_hide": 1,
+        "default": "0",
+        "fetch_from": "item_code.tax_exclusive",
+        "fetch_if_empty": 0
+    },
+    {
+        "doctype": "Custom Field",
+        "name": "Sales Invoice Item-tax_exclusive_rate",
+        "dt": "Sales Invoice Item",
+        "fieldname": "tax_exclusive_rate",
+        "fieldtype": "Currency",
+        "label": "Tax Excl. Rate",
+        "insert_after": "price_list_rate",
+        "in_list_view": 1,
+        "allow_on_submit": 0,
+        "print_hide": 1
+    }
+]

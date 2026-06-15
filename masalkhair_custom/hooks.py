@@ -5,6 +5,27 @@ app_description = "Masalkhair Custom"
 app_email = "siva@enfono.com"
 app_license = "mit"
 
+fixtures = [
+    {
+        "dt": "Custom Field",
+        "filters": [
+            ["dt", "in", ["Item", "Sales Invoice Item"]],
+            ["fieldname", "in", ["tax_exclusive", "tax_exclusive_rate"]],
+        ],
+    }
+]
+
+doctype_js = {
+    "Sales Invoice": "public/js/sales_invoice.js",
+}
+
+doc_events = {
+    "Sales Invoice": {
+        "before_validate": "masalkhair_custom.masalkhair_custom.override.sales_invoice.before_validate",
+        "validate": "masalkhair_custom.masalkhair_custom.override.sales_invoice.validate",
+    }
+}
+
 # Apps
 # ------------------
 
