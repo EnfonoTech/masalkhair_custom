@@ -32,10 +32,29 @@ def _validate_exclusive_rates(doc):
 
 def _apply_exclusive_rates(doc):
     for item in doc.items:
-        if not flt(item.get("tax_exclusive_rate")):
+        # fetch_from only works in the browser; fetch from Item master when missing
+        if not cint(item.get("tax_exclusive")):
+            item.tax_exclusive = cint(
+                frappe.db.get_value("Item", item.item_code, "tax_exclusive") or 0
+            )
+
+        if not cint(item.tax_exclusive):
             continue
+
+        # When tax_exclusive_rate is not set, derive it from item.rate.
+        # If taxes are included in the print rate the incoming item.rate is already
+        # the inclusive (gross) price, so we must extract the exclusive (net) rate by
+        # dividing.  Only when there are no included taxes is item.rate already net.
+        if not flt(item.get("tax_exclusive_rate")):
+            tax_fraction = _get_item_tax_fraction(doc, item)
+            if tax_fraction > 0:
+                item.tax_exclusive_rate = flt(item.rate / (1 + tax_fraction))
+            else:
+                item.tax_exclusive_rate = flt(item.rate)
+
         tax_fraction = _get_item_tax_fraction(doc, item)
         item.rate = flt(item.tax_exclusive_rate * (1 + tax_fraction))
+        item.price_list_rate = item.rate  # keep price_list_rate in sync so discount stays 0
         item.amount = flt(item.rate * item.qty)
 
 
