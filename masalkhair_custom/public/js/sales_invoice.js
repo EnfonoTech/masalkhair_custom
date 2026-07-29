@@ -49,7 +49,15 @@ frappe.ui.form.on("Sales Invoice Item", {
             item.price_list_rate * (1 - flt(item.discount_percentage) / 100),
             precision("rate", item)
         );
-        if (flt(item.rate) === discounted_pl) return;
+
+        // Item just fetched from the price list: Rate still holds the raw price-list value
+        // and no Tax Excl. Rate has been entered yet. The price-list rate IS the exclusive
+        // rate for tax-exclusive items — route it into Tax Excl. Rate (which grosses Rate
+        // up by tax) instead of silently leaving the un-grossed value sitting in Rate.
+        if (!flt(item.tax_exclusive_rate) && flt(item.rate) === discounted_pl) {
+            frappe.model.set_value(cdt, cdn, "tax_exclusive_rate", discounted_pl);
+            return;
+        }
 
         let expected_rate = flt(item.tax_exclusive_rate)
             ? masalkhair_compute_inclusive_rate(frm, item)
