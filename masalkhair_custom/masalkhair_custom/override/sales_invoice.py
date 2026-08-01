@@ -53,9 +53,37 @@ def _apply_exclusive_rates(doc):
                 item.tax_exclusive_rate = flt(item.rate)
 
         tax_fraction = _get_item_tax_fraction(doc, item)
-        item.rate = flt(item.tax_exclusive_rate * (1 + tax_fraction))
+        item.rate = flt(item.tax_exclusive_rate * (1 + tax_fraction), item.precision("rate"))
         item.price_list_rate = item.rate  # keep price_list_rate in sync so discount stays 0
-        item.amount = flt(item.rate * item.qty)
+
+        _clear_margin_and_discount(item)
+
+
+def _clear_margin_and_discount(item):
+    """Neutralise ERPNext's margin/discount fields on tax-exclusive rows.
+
+    For these items the Tax Excl. Rate is the only price input, and this hook has just
+    set `price_list_rate == rate` from it.  Anything left in the Discount and Margin
+    section would then be layered on top by erpnext's calculate_item_values():
+
+      * `rate_with_margin = price_list_rate + margin` re-adds a margin that erpnext
+        itself auto-stamped earlier (transaction.js sets margin_type="Amount" the moment
+        the grossed-up rate exceeds the price-list rate), so the margin gets charged twice.
+      * a *negative* discount_amount — which make_return_doc plants on credit notes,
+        because it clears pricing_rules and calculate_margin() then returns (0, 0) and
+        leaves `discount_amount = price_list_rate - rate` below zero — is applied as
+        `rate = rate_with_margin - discount_amount`, i.e. it inflates the rate.
+
+    Discounts on tax-exclusive items are expressed by lowering the Tax Excl. Rate itself
+    (see the discount_percentage handler in public/js/sales_invoice.js), so zeroing these
+    fields loses nothing.
+    """
+    item.margin_type = ""
+    item.margin_rate_or_amount = 0
+    item.rate_with_margin = 0
+    item.base_rate_with_margin = 0
+    item.discount_percentage = 0
+    item.discount_amount = 0
 
 
 def _get_item_tax_fraction(doc, item):

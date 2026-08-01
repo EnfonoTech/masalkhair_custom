@@ -15,6 +15,9 @@ frappe.ui.form.on("Sales Invoice", {
         if (!masalkhair_is_enabled(frm)) return;
         let errors = [];
         (frm.doc.items || []).forEach(function (item, idx) {
+            // last stop before the doc is sent — no margin or discount may ride along on a
+            // tax-exclusive row, or erpnext will re-add it on top of the grossed-up rate
+            if (cint(item.tax_exclusive)) masalkhair_clear_margin(item);
             if (cint(item.tax_exclusive) && !flt(item.tax_exclusive_rate)) {
                 errors.push(
                     __("Row {0}: {1} — Tax Excl. Rate is required for tax-exclusive items.", [
@@ -85,7 +88,13 @@ frappe.ui.form.on("Sales Invoice Item", {
         }
 
         let inclusive_rate = masalkhair_compute_inclusive_rate(frm, item);
-        frappe.model.set_value(cdt, cdn, "rate", inclusive_rate);
+        frappe.model.set_value(cdt, cdn, "rate", inclusive_rate).then(function () {
+            // erpnext's own rate handler has just run and, seeing the grossed-up rate sit
+            // above the price-list rate, stamped Margin Type = Amount. Wipe it — see
+            // _clear_margin_and_discount() in override/sales_invoice.py.
+            masalkhair_clear_margin(locals[cdt][cdn]);
+            frm.refresh_field("items");
+        });
     },
 
     discount_percentage: function (frm, cdt, cdn) {
@@ -111,6 +120,18 @@ frappe.ui.form.on("Sales Taxes and Charges", {
         masalkhair_reapply_all_exclusive_rates(frm);
     },
 });
+
+function masalkhair_clear_margin(item) {
+    // assign directly rather than via set_value: setting margin_type fires erpnext's
+    // margin_type handler, which recomputes rate from the price-list rate and would
+    // undo the grossed-up rate we just set.
+    item.margin_type = "";
+    item.margin_rate_or_amount = 0;
+    item.rate_with_margin = 0;
+    item.base_rate_with_margin = 0;
+    item.discount_percentage = 0;
+    item.discount_amount = 0;
+}
 
 function masalkhair_is_enabled(frm) {
     // undefined = setting not yet fetched; default to enabled
