@@ -9,7 +9,13 @@ fixtures = [
     {
         "dt": "Custom Field",
         "filters": [
-            ["dt", "in", ["Item", "Sales Invoice Item"]],
+            ["dt", "in", [
+                "Item",
+                "Sales Invoice Item",
+                "Quotation Item",
+                "Sales Order Item",
+                "Delivery Note Item",
+            ]],
             ["fieldname", "in", ["tax_exclusive", "tax_exclusive_rate"]],
         ],
     }
@@ -17,13 +23,17 @@ fixtures = [
 
 doctype_js = {
     "Sales Invoice": "public/js/sales_invoice.js",
+    "Quotation": "public/js/sales_invoice.js",
+    "Sales Order": "public/js/sales_invoice.js",
+    "Delivery Note": "public/js/sales_invoice.js",
 }
 
 doc_events = {
-    "Sales Invoice": {
+    dt: {
         "before_validate": "masalkhair_custom.masalkhair_custom.override.sales_invoice.before_validate",
         "validate": "masalkhair_custom.masalkhair_custom.override.sales_invoice.validate",
     }
+    for dt in ["Sales Invoice", "Quotation", "Sales Order", "Delivery Note"]
 }
 
 # Apps
